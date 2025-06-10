@@ -1,0 +1,139 @@
+body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+    }
+
+    .cassino {
+      display: grid;
+      grid-template-columns: repeat(3, 90px);
+      gap: 10px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+
+    .slot {
+      font-size: 48px;
+      width: 90px;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+    }
+
+    .win {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .controls {
+      margin-top: 10px;
+    }
+
+    .controls .row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 5px;
+    }
+
+    .controls button {
+      width: 40px;
+      height: 40px;
+      font-size: 14px;
+      border-radius: 50%;
+      padding: 0;
+    }
+
+    .bet-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .bet-display {
+      font-weight: bold;
+      min-width: 60px;
+      display: inline-block;
+    }
+
+    .lever {
+      font-size: 28px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background-color: #ffcc00;
+      border: none;
+      cursor: pointer;
+      margin: 20px auto;
+      display: block;
+    }
+
+    .player-name {
+      font-size: 20px;
+      margin-top: 10px;
+    }
+
+    .game-values {
+      display: flex;
+      justify-content: space-between;
+      width: 90%;
+      max-width: 400px;
+      margin: 10px auto;
+      font-weight: bold;
+    }
+
+    .ranking {
+      margin: 30px auto;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .sparkle {
+      position: fixed;
+      font-size: 20px;
+      animation: sparkle 1s ease-out forwards;
+    }
+
+    @keyframes sparkle {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(2); }
+    }
+    

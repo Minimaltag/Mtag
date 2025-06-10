@@ -1,0 +1,144 @@
+/* ------------------------------ */
+/* Reset e Layout Geral */
+/* ------------------------------ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #ff9340;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ------------------------------ */
+/* Container de Login */
+/* ------------------------------ */
+.login-container {
+  background: white;
+  padding: 40px 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  width: 320px;
+  text-align: center;
+}
+
+/* ------------------------------ */
+/* Logo com animação */
+/* ------------------------------ */
+.logo {
+  max-width: 160px;
+  height: auto;
+  margin-top: 2vh;
+  margin-bottom: 3vh;
+  animation: pulse 2s infinite;
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px rgba(0, 123, 255, 0.2);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px #ff6a00);
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px #007bff);
+  }
+}
+
+/* ------------------------------ */
+/* Título e Textos */
+/* ------------------------------ */
+h2 {
+  color: #ff6a00;
+  margin-bottom: 30px;
+  font-weight: 600;
+  font-size: 1.8rem;
+}
+
+label {
+  display: block;
+  text-align: left;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #007bff;
+}
+
+/* ------------------------------ */
+/* Campos de Entrada */
+/* ------------------------------ */
+input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+input:focus {
+  border-color: #ff6a00;
+  outline: none;
+}
+
+/* ------------------------------ */
+/* Botão */
+/* ------------------------------ */
+button {
+  width: 100%;
+  background: #ff6a00;
+  color: white;
+  padding: 14px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background: #e05a00;
+}
+
+/* ------------------------------ */
+/* Mensagem de Erro */
+/* ------------------------------ */
+.mensagem {
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: bold;
+  background-color: #ffe0e0;
+  color: #a00;
+  border: 1px solid #e00;
+}
+
+/* ------------------------------ */
+/* Spinner de Carregamento */
+/* ------------------------------ */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-top: 3px solid #888;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

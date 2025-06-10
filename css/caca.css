@@ -1,0 +1,283 @@
+/* Fonte moderna */
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: #fff;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  min-height: 100vh;
+  position: relative;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Títulos e Texto */
+h1 {
+  font-size: 1.8em;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+#timer {
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+#pontuacao {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+/* Lista de Palavras */
+#word-list {
+  font-size: 1em;
+  margin-bottom: 10px;
+  max-width: 90vmin;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.word {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #eee;
+  transition: background-color 0.3s, text-decoration 0.3s;
+}
+
+.word.found {
+  text-decoration: line-through;
+  background-color: #cfc;
+}
+
+/* Grade de Letras - Estilo Moderno */
+#grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 8px;
+  width: clamp(300px, 90vmin, 600px);
+  margin: 20px 0;
+  padding: 10px;
+  background: #f8f8f8;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.cell {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: clamp(18px, 4vmin, 28px);
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
+}
+
+.cell:hover {
+  background-color: #e0e0e0;
+  transform: scale(1.05);
+}
+
+.cell.selected {
+  background-color: #ffd54f;
+  color: #000;
+  box-shadow: 0 0 10px rgba(255, 213, 79, 0.6);
+}
+
+.cell.found {
+  background-color: #81c784 !important;
+  color: #fff;
+  font-weight: bold;
+  box-shadow: 0 0 12px rgba(129, 199, 132, 0.8);
+}
+
+/* Botões */
+.btn {
+  margin: 0.5em;
+  padding: 0.5em 1em;
+  font-size: 1em;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn:hover {
+  background-color: #eee;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal de Fim de Jogo */
+#game-over,
+#ranking-form-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 10;
+  text-align: center;
+}
+
+#game-over {
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: #fefefe;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  max-width: 500px;
+  color: #333;
+}
+
+#game-over p {
+  font-size: 2em;
+  margin-bottom: 1em;
+}
+
+#respostas {
+  margin-top: 1em;
+  color: #ff5555;
+  text-align: center;
+}
+
+/* Formulário de Ranking */
+#ranking-form {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  max-width: 90%;
+}
+
+#ranking-form input {
+  padding: 10px;
+  font-size: 1em;
+  width: 250px;
+  margin-bottom: 10px;
+}
+
+/* Seção de Ranking */
+#ranking-section {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+#ranking-section h2 {
+  text-align: center;
+}
+
+#ranking-list {
+  list-style: none;
+  padding: 0;
+  text-align: center;
+}
+
+#ranking-list li {
+  margin: 5px 0;
+}
+
+/* Responsividade Adicional */
+@media (max-width: 600px) {
+  #grid {
+    width: 95vmin;
+  }
+
+  .cell {
+    font-size: 5vmin;
+  }
+}
+
+/* DARK MODE - autom. via preferências do sistema */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #121212;
+    color: #f0f0f0;
+  }
+
+  .word {
+    background-color: #333;
+    border-color: #555;
+    color: #eee;
+  }
+
+  .word.found {
+    background-color: #2e7d32;
+  }
+
+  #grid {
+    background-color: #1e1e1e;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+  }
+
+  .cell {
+    background-color: #2a2a2a;
+    color: #f0f0f0;
+    box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.05);
+  }
+
+  .cell.selected {
+    background-color: #ffca28;
+    color: #000;
+  }
+
+  .cell.found {
+    background-color: #388e3c !important;
+    color: #fff;
+  }
+
+  .btn {
+    background-color: #333;
+    color: #f0f0f0;
+    border-color: #666;
+  }
+
+  .btn:hover {
+    background-color: #444;
+  }
+
+  #game-over {
+    background-color: #222;
+    color: #fff;
+    border-color: #444;
+  }
+
+  #ranking-form {
+    background-color: #333;
+    color: #fff;
+  }
+
+  #ranking-form input {
+    background-color: #222;
+    color: #fff;
+    border: 1px solid #555;
+  }
+}
+.cell {
+  will-change: transform;
+}
