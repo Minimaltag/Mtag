@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Jogo da Forca</title>
+  <link rel="stylesheet" href="../../css/forca.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div id="telaInicio">
+    <h1>Jogo da Forca</h1>
+    <button onclick="mostrarRanking()">📊 Ver Ranking</button>
+    <p>Escolha o modo de jogo:</p>
+    <button onclick="iniciarJogo('normal')">Modo Normal</button>
+    <button onclick="iniciarJogo('batalha')">Modo Batalha 🥊</button>
+  </div>
+
+  <div id="telaJogo" class="hidden">
+    <div id="topBar">
+      <button onclick="desistir()" id="btnDesistir" aria-label="Desistir">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M15 18l-6-6 6-6" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div>
+        <div id="nivel" class="hidden">Nível: 1</div>
+        <div id="timer" class="hidden">Tempo restante: 10:00</div>
+      </div>
+      <div style="float: right;" id="pontuacaoAtual" class="hidden">🔥 0</div>
+    </div>
+
+    <div id="categoria"></div>
+    <svg viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg">
+      <line x1="20" y1="230" x2="180" y2="230" stroke="#000" stroke-width="4"/>
+      <line x1="60" y1="230" x2="60" y2="20" stroke="#000" stroke-width="4"/>
+      <line x1="60" y1="20" x2="140" y2="20" stroke="#000" stroke-width="4"/>
+      <line x1="140" y1="20" x2="140" y2="50" stroke="#000" stroke-width="4"/>
+      <circle id="head" class="parte" cx="140" cy="70" r="20" stroke="#000" stroke-width="4" fill="none" style="visibility:hidden"/>
+      <line id="body" class="parte" x1="140" y1="90" x2="140" y2="150" stroke="#000" stroke-width="4" style="visibility:hidden"/>
+      <line id="armR" class="parte" x1="140" y1="100" x2="170" y2="130" stroke="#000" stroke-width="4" style="visibility:hidden"/>
+      <line id="armL" class="parte" x1="140" y1="100" x2="110" y2="130" stroke="#000" stroke-width="4" style="visibility:hidden"/>
+      <line id="legR" class="parte" x1="140" y1="150" x2="170" y2="190" stroke="#000" stroke-width="4" style="visibility:hidden"/>
+      <line id="legL" class="parte" x1="140" y1="150" x2="110" y2="190" stroke="#000" stroke-width="4" style="visibility:hidden"/>
+    </svg>
+
+    <div id="wordDisplay">_ _ _ _</div>
+    <div id="teclado"></div>
+    <div id="wrongLetters">Erradas:</div>
+    <div id="message"></div>
+
+    <div id="inputNomeBox">
+      <p>Digite seu nome para salvar no ranking:</p>
+      <input id="inputNome" placeholder="Seu nome" />
+      <button onclick="salvarRanking()">Salvar</button>
+    </div>
+  </div>
+
+  <div id="telaRanking" class="hidden">
+    <h2>🏆 Ranking</h2>
+    <div id="rankingList"></div>
+    <button onclick="voltarInicio()">🔙 Voltar</button>
+  </div>
+
+  <div id="overlay"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnPcxbJaG3kwBjU7QRmTwOYM6amuAjx1o",
+      authDomain: "teste-eff5e.firebaseapp.com",
+      projectId: "teste-eff5e",
+      storageBucket: "teste-eff5e.appspot.com",
+      messagingSenderId: "272404465161",
+      appId: "1:272404465161:web:260b0242408081a17c9ad8"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const bancoPalavras = {
+      "ANIMAL": ["CACHORRO", "GATO", "ELEFANTE", "LEAO", "TIGRE", "ZEBRA", "GIRAFA", "MACACO", "JACARE", "TUBARAO", "GOLFINHO", "CAVALO", "PAPAGAIO", "URSO", "VEADO", "COELHO", "CAMELO", "ANTA", "FOCA", "PINGUIM"],
+      "PAIS": ["BRASIL", "CANADA", "CHINA", "ALEMANHA", "FRANCA", "ITALIA", "JAPAO", "MEXICO", "EGITO", "RUSSIA", "INDIA", "PORTUGAL", "ESPANHA", "GRECIA", "ARGENTINA", "CHILE", "AUSTRALIA", "NORUEGA", "SUECIA", "TURQUIA"],
+      "DEFESA CIVIL": ["BOMBEIRO", "SIRENE", "RESGATE", "EMERGENCIA", "ABRIGO", "EVACUACAO", "INCENDIO", "ALAGAMENTO", "SIRENES", "CHUVA", "DESLIZAMENTO", "ALERTA", "SOCORRO", "SEGURANCA", "PREVENCAO", "DEFESA", "RISCO", "COMUNIDADE", "FOGO", "PERIGO"],
+      "NOMES": ["JOAO", "MARIA", "ANA", "PEDRO", "JULIA", "BRUNO", "PAULO", "LARA", "LUCAS", "SOPHIA", "RAFAEL", "ENZO", "CAMILA", "DANIEL", "CARLA", "GUSTAVO", "HELENA", "MARCOS", "ALINE", "THIAGO"],
+      "OBJETO": ["CADEIRA", "MESA", "GARRAFA", "CELULAR", "CADERNO", "CANETA", "OCULOS", "CONTROLE", "CARREGADOR", "TECLADO", "MOCHILA", "LAPIS", "RELOGIO", "VENTILADOR", "SOFA", "ESPELHO", "JANELA", "PORTA", "TELEFONE", "LIVRO"]
+    };
+
+    const partes = ["head", "body", "armR", "armL", "legR", "legL"];
+    const temposPorNivel = [600,540,480,420,360,300,240,180,120,60];
+    let modo = "normal", nivel = 1, tempoRestante = 0, intervalo, ranking = 0;
+    let categoriaAtual, palavraSecreta, letrasCertas = [], letrasErradas = [], palavrasUsadas = [];
+    const tecladoDiv = document.getElementById("teclado");
+    const inputNomeBox = document.getElementById("inputNomeBox");
+    const overlay = document.getElementById("overlay");
+
+    function iniciarJogo(modoSelecionado) {
+      document.getElementById("telaInicio").classList.add("hidden");
+      document.getElementById("telaJogo").classList.remove("hidden");
+      document.getElementById("telaRanking").classList.add("hidden");
+      modo = modoSelecionado;
+      nivel = 1;
+      ranking = 0;
+      palavrasUsadas = [];
+      esconderModalNome();
+      removerBotoesFim();
+      document.getElementById("pontuacaoAtual").classList.toggle("hidden", modo !== "batalha");
+      iniciarNivel();
+    }
+
+    function iniciarNivel() {
+      letrasCertas = [];
+      letrasErradas = [];
+      document.getElementById("wrongLetters").textContent = "Erradas:";
+      document.getElementById("message").textContent = "";
+      esconderModalNome();
+      removerBotoesFim();
+      partes.forEach(id => document.getElementById(id).style.visibility = "hidden");
+
+      const categorias = Object.keys(bancoPalavras);
+      categoriaAtual = categorias[Math.floor(Math.random() * categorias.length)];
+      let palavrasDisponiveis = bancoPalavras[categoriaAtual].filter(p => !palavrasUsadas.includes(p));
+      if (palavrasDisponiveis.length === 0) {
+        palavrasUsadas = [];
+        palavrasDisponiveis = bancoPalavras[categoriaAtual];
+      }
+
+      palavraSecreta = palavrasDisponiveis[Math.floor(Math.random() * palavrasDisponiveis.length)].toUpperCase();
+      palavrasUsadas.push(palavraSecreta);
+
+      document.getElementById("categoria").textContent = "Categoria: " + categoriaAtual;
+      document.getElementById("nivel").textContent = "Nível: " + nivel;
+      document.getElementById("nivel").classList.toggle("hidden", modo !== "normal");
+      document.getElementById("timer").classList.toggle("hidden", modo !== "batalha");
+
+      atualizarDisplay();
+      gerarTeclado();
+
+      if (modo === "batalha") {
+        if (intervalo) clearInterval(intervalo);
+        tempoRestante = temposPorNivel[Math.min(nivel - 1, temposPorNivel.length - 1)];
+        atualizarTimer();
+        intervalo = setInterval(() => {
+          tempoRestante--;
+          atualizarTimer();
+          if (tempoRestante <= 0) {
+            clearInterval(intervalo);
+            fimDeJogo("⏰ Tempo esgotado!");
+          }
+        }, 1000);
+      } else {
+        if (intervalo) clearInterval(intervalo);
+      }
+    }
+
+    function atualizarTimer() {
+      const minutos = Math.floor(tempoRestante / 60);
+      const segundos = tempoRestante % 60;
+      document.getElementById("timer").textContent = `⏱ Tempo restante: ${minutos}:${segundos < 10 ? "0" : ""}${segundos}`;
+    }
+
+    function atualizarDisplay() {
+      const display = palavraSecreta.split("").map(letra => letrasCertas.includes(letra) ? letra : "_").join(" ");
+      document.getElementById("wordDisplay").textContent = display;
+    }
+
+    function gerarTeclado() {
+      tecladoDiv.innerHTML = "";
+      const letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      for (let l of letras) {
+        const btn = document.createElement("button");
+        btn.textContent = l;
+        btn.onclick = () => verificarLetra(l, btn);
+        tecladoDiv.appendChild(btn);
+      }
+    }
+
+    function verificarLetra(letra, btn) {
+      btn.disabled = true;
+      if (palavraSecreta.includes(letra)) {
+        letrasCertas.push(letra);
+        atualizarDisplay();
+        if (palavraSecreta.split("").every(l => letrasCertas.includes(l))) {
+          if (modo === "batalha") {
+            ranking += tempoRestante;
+            document.getElementById("pontuacaoAtual").textContent = "🔥 " + ranking;
+          }
+          nivel++;
+          if (modo === "normal" && nivel > 100) {
+            fimDeJogo("🎉 Parabéns! Você venceu todos os níveis!");
+          } else {
+            iniciarNivel();
+          }
+        }
+      } else {
+        letrasErradas.push(letra);
+        document.getElementById("wrongLetters").textContent = "Erradas: " + letrasErradas.join(" ");
+        if (letrasErradas.length <= partes.length) {
+          document.getElementById(partes[letrasErradas.length - 1]).style.visibility = "visible";
+        }
+        if (letrasErradas.length >= partes.length) {
+          fimDeJogo(`💀 Você perdeu! A palavra era: ${palavraSecreta}`);
+        }
+      }
+    }
+
+    function fimDeJogo(msg) {
+      document.getElementById("message").textContent = msg;
+      tecladoDiv.innerHTML = "";
+      if (intervalo) clearInterval(intervalo);
+      if (modo === "batalha" && ranking > 0) {
+        mostrarModalNome();
+      } else {
+        mostrarBotoesFim();
+      }
+    }
+
+    function mostrarModalNome() {
+      overlay.classList.add("visible");
+      inputNomeBox.classList.add("visible");
+    }
+
+    function esconderModalNome() {
+      overlay.classList.remove("visible");
+      inputNomeBox.classList.remove("visible");
+    }
+
+    async function salvarRanking() {
+      const nome = document.getElementById("inputNome").value.trim();
+      if (nome === "") return;
+      await db.collection("forca").add({ nome, pontos: ranking, criadoEm: Date.now() });
+      voltarInicio();
+    }
+
+    async function mostrarRanking() {
+      document.getElementById("telaInicio").classList.add("hidden");
+      document.getElementById("telaJogo").classList.add("hidden");
+      document.getElementById("telaRanking").classList.remove("hidden");
+
+      const snapshot = await db.collection("forca").orderBy("pontos", "desc").limit(10).get();
+      const list = snapshot.docs.map((doc, i) => {
+        const data = doc.data();
+        return `<p>${i + 1}. ${data.nome} - ${data.pontos} pts</p>`;
+      }).join("");
+      document.getElementById("rankingList").innerHTML = list || "<p>Nenhum registro ainda.</p>";
+    }
+
+    function voltarInicio() {
+      esconderModalNome();
+      removerBotoesFim();
+      document.getElementById("telaInicio").classList.remove("hidden");
+      document.getElementById("telaJogo").classList.add("hidden");
+      document.getElementById("telaRanking").classList.add("hidden");
+    }
+
+    function mostrarBotoesFim() {
+      const container = document.getElementById("message");
+      const div = document.createElement("div");
+      div.id = "botoesFim";
+      div.innerHTML = `
+        <button onclick="iniciarJogo(modo)">🔁 Reiniciar</button>
+        <button onclick="voltarInicio()">🔙 Menu</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function removerBotoesFim() {
+      const existente = document.getElementById("botoesFim");
+      if (existente) existente.remove();
+    }
+
+    function desistir() {
+      const confirmacao = confirm("Tem certeza de que deseja desistir da rodada?");
+      if (confirmacao) {
+        if (intervalo) clearInterval(intervalo);
+        fimDeJogo("😔 Você desistiu da rodada.");
+      }
+    }
+  </script>
+</body>
+</html>

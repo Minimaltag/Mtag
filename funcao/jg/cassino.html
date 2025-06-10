@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Jogo do Bicho</title>
+  <link rel="stylesheet" href="../../css/cassino.css" />
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div class="modal" id="userModal">
+    <div class="modal-content">
+      <h2>Bem-vindo ao Jogo do Bicho!</h2>
+      <input type="text" id="newUser" placeholder="Digite novo nome"/>
+      <button onclick="registerUser()">Cadastrar</button>
+      <hr/>
+      <select id="userList">
+        <option disabled selected>Selecionar existente</option>
+      </select>
+      <button onclick="selectUser()">Entrar</button>
+    </div>
+  </div>
+
+  <h1>Jogo do Bicho</h1>
+  <div class="player-name" id="playerNameDisplay"></div>
+
+  <div class="cassino" id="cassino">
+    <div class="slot" id="slot0">❓</div><div class="slot" id="slot1">❓</div><div class="slot" id="slot2">❓</div>
+    <div class="slot" id="slot3">❓</div><div class="slot" id="slot4">❓</div><div class="slot" id="slot5">❓</div>
+    <div class="slot" id="slot6">❓</div><div class="slot" id="slot7">❓</div><div class="slot" id="slot8">❓</div>
+  </div>
+
+  <div class="game-values">
+    <div id="balanceDisplay">💰 Saldo: 0.00</div>
+    <div id="roundResult">🎯 Rodada: 0.00</div>
+  </div>
+
+  <div class="controls">
+    <div class="row">
+      <button onclick="toggleTurbo()" id="turboBtn">OFF</button>
+      <button onclick="toggleAuto()" id="autoBtn">OFF</button>
+    </div>
+    <div class="row bet-control">
+      <button onclick="decreaseBet()">➖</button>
+      <span class="bet-display" id="betDisplay">0.50</span>
+      <button onclick="increaseBet()">➕</button>
+    </div>
+  </div>
+
+  <button class="lever" onclick="handleSpin()">🎯</button>
+  <button onclick="toggleRanking()">🏆 Ranking</button>
+
+  <div class="ranking" id="ranking" style="display: none;">
+    <h3>Top Jogadores</h3>
+    <table>
+      <thead>
+        <tr><th>Nome</th><th>Saldo 🔥</th></tr>
+      </thead>
+      <tbody id="rankingList"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnPcxbJaG3kwBjU7QRmTwOYM6amuAjx1o",
+      authDomain: "teste-eff5e.firebaseapp.com",
+      projectId: "teste-eff5e",
+      storageBucket: "teste-eff5e.appspot.com",
+      messagingSenderId: "272404465161",
+      appId: "1:272404465161:web:260b0242408081a17c9ad8"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const icons = ["⛑️", "🔥", "🚒", "💎", "👑"];
+    const iconValues = {
+      "⛑️": 2,
+      "🔥": 4,
+      "🚒": 6,
+      "💎": 8,
+      "👑": 10
+    };
+
+    let currentBet = 0.5;
+    let balance = 0;
+    let turboMode = false;
+    let autoCount = 0;
+    let playerName = "";
+    let rankingVisivel = false;
+
+    function updatePlayerDisplay() {
+      document.getElementById("playerNameDisplay").textContent = `Jogador: ${playerName}`;
+    }
+
+    function updateBalanceDisplay() {
+      document.getElementById("balanceDisplay").textContent = `💰 Saldo: ${balance.toFixed(2)}`;
+      if (playerName) {
+        db.collection("jogadores").doc(playerName).set({ saldo: balance }, { merge: true });
+      }
+    }
+
+    function updateRoundResult(amount) {
+      const text = amount >= 0 ? `+${amount.toFixed(2)}` : `${amount.toFixed(2)}`;
+      document.getElementById("roundResult").textContent = `🎯 Rodada: ${text}`;
+    }
+
+    function updateBetDisplay() {
+      document.getElementById("betDisplay").textContent = currentBet.toFixed(2);
+    }
+
+    function decreaseBet() {
+      if (currentBet > 0.5) {
+        currentBet = Math.round((currentBet - 0.5) * 100) / 100;
+        updateBetDisplay();
+      }
+    }
+
+    function increaseBet() {
+      currentBet = Math.round((currentBet + 0.5) * 100) / 100;
+      updateBetDisplay();
+    }
+
+    function getRandomIcon() {
+      return icons[Math.floor(Math.random() * icons.length)];
+    }
+
+    function clearHighlights() {
+      for (let i = 0; i < 9; i++) {
+        document.getElementById(`slot${i}`).classList.remove("win");
+      }
+    }
+
+    function highlightSlots(indices) {
+      indices.forEach(i => document.getElementById(`slot${i}`).classList.add("win"));
+    }
+
+    function sparkleEffect() {
+      for (let i = 0; i < 20; i++) {
+        const sparkle = document.createElement("div");
+        sparkle.className = "sparkle";
+        sparkle.style.left = `${Math.random() * window.innerWidth}px`;
+        sparkle.style.top = `${Math.random() * window.innerHeight}px`;
+        sparkle.textContent = "✨";
+        document.body.appendChild(sparkle);
+        setTimeout(() => sparkle.remove(), 1000);
+      }
+    }
+
+    async function startSpin() {
+      if (rankingVisivel) {
+        alert("❌ Feche o ranking antes de jogar.");
+        return;
+      }
+
+      if (balance < currentBet) {
+        alert("💸 Saldo insuficiente!");
+        return;
+      }
+
+      const slots = [...Array(9)].map((_, i) => document.getElementById(`slot${i}`));
+      clearHighlights();
+      const spinTime = turboMode ? 1000 : 3000;
+
+      await Promise.all(slots.map(slot => {
+        return new Promise(res => {
+          const interval = setInterval(() => {
+            slot.textContent = getRandomIcon();
+          }, 100);
+          setTimeout(() => {
+            clearInterval(interval);
+            slot.textContent = getRandomIcon();
+            res();
+          }, spinTime + Math.random() * 300);
+        });
+      }));
+
+      const values = slots.map(s => s.textContent);
+      const lines = [[0,1,2],[3,4,5],[6,7,8],[0,4,8],[2,4,6]];
+      let totalWin = 0, winningLines = [];
+
+      lines.forEach(line => {
+        const [a,b,c] = line;
+        if (values[a] === values[b] && values[b] === values[c]) {
+          const win = iconValues[values[a]] * (currentBet / 0.5);
+          totalWin += win;
+          winningLines.push(line);
+        }
+      });
+
+      let bonus = 1;
+      if (values.every(v => v === values[0])) bonus = 10;
+      else if (winningLines.length > 1) bonus = 2;
+
+      const finalWin = totalWin * bonus;
+      balance = balance - currentBet + finalWin;
+
+      updateBalanceDisplay();
+      updateRoundResult(finalWin - currentBet);
+      winningLines.forEach(line => highlightSlots(line));
+
+      if (finalWin > 0) sparkleEffect();
+    }
+
+    async function handleSpin() {
+      await startSpin();
+      if (autoCount > 0) {
+        autoCount--;
+        document.getElementById("autoBtn").textContent = autoCount === 0 ? "OFF" : autoCount;
+        setTimeout(handleSpin, turboMode ? 1000 : 4000);
+      }
+    }
+
+    function toggleTurbo() {
+      turboMode = !turboMode;
+      document.getElementById("turboBtn").textContent = turboMode ? "ON" : "OFF";
+    }
+
+    function toggleAuto() {
+      if (autoCount === 0) autoCount = 3;
+      else if (autoCount === 3) autoCount = 6;
+      else if (autoCount === 6) autoCount = 9;
+      else if (autoCount === 9) autoCount = 12;
+      else autoCount = 0;
+      document.getElementById("autoBtn").textContent = autoCount === 0 ? "OFF" : autoCount;
+    }
+
+    async function toggleRanking() {
+      const container = document.getElementById("ranking");
+      rankingVisivel = !rankingVisivel;
+      container.style.display = rankingVisivel ? "block" : "none";
+
+      if (rankingVisivel) {
+        const snapshot = await db.collection("jogadores").get();
+        const ranking = snapshot.docs.map(doc => ({
+          nome: doc.id,
+          saldo: doc.data().saldo || 0
+        })).sort((a, b) => b.saldo - a.saldo);
+
+        const tbody = document.getElementById("rankingList");
+        tbody.innerHTML = "";
+        ranking.forEach(p => {
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${p.nome}</td><td>${p.saldo.toFixed(2)}</td>`;
+          tbody.appendChild(row);
+        });
+      }
+    }
+
+    async function registerUser() {
+      const name = document.getElementById("newUser").value.trim();
+      if (name) {
+        playerName = name;
+        balance = 1000;
+        await db.collection("jogadores").doc(playerName).set({ saldo: balance });
+        document.getElementById("userModal").style.display = "none";
+        updatePlayerDisplay();
+        updateBalanceDisplay();
+        updateBetDisplay();
+        updateRoundResult(0);
+      }
+    }
+
+    async function selectUser() {
+      const selected = document.getElementById("userList").value;
+      if (selected) {
+        playerName = selected;
+        const doc = await db.collection("jogadores").doc(playerName).get();
+        balance = doc.exists ? doc.data().saldo : 1000;
+        document.getElementById("userModal").style.display = "none";
+        updatePlayerDisplay();
+        updateBalanceDisplay();
+        updateBetDisplay();
+        updateRoundResult(0);
+      }
+    }
+
+    window.onload = async () => {
+      const userList = document.getElementById("userList");
+      const snapshot = await db.collection("jogadores").get();
+      snapshot.forEach(doc => {
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = doc.id;
+        userList.appendChild(option);
+      });
+    };
+  </script>
+</body>
+</html>
