@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tabela de Aniversários</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px auto;
+      max-width: 900px;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    tr.highlight-next {
+      background-color: #e0f7fa;
+      font-weight: bold;
+    }
+
+    tr.past-date {
+      color: #aaa;
+    }
+
+    .add-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .add-btn:hover {
+      background-color: #45a049;
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      margin-right: 10px;
+      fill: #555;
+    }
+
+    svg:hover {
+      fill: #000;
+    }
+
+    #confettiCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* Responsividade para dispositivos móveis */
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        margin-bottom: 15px;
+        border-bottom: 2px solid #ccc;
+      }
+
+      td {
+        padding-left: 50%;
+        position: relative;
+        text-align: right;
+      }
+
+      td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        font-weight: bold;
+        text-align: left;
+      }
+
+      .add-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Aniversariantes</h1>
+
+  <table id="birthdayTable">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Data de Nascimento</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button class="add-btn" onclick="addRow()">+ Adicionar Aniversariante</button>
+
+  <canvas id="confettiCanvas"></canvas>
+
+  <script>
+    const storageKey = "aniversariantes";
+    const defaultData = [
+      { nome: "Estter", data: "14/01/2006" },
+      { nome: "Maria", data: "25/01/1964" },
+      { nome: "Naftalison", data: "11/02/1999" },
+      { nome: "Darlan", data: "06/03/1996" },
+      { nome: "Bruno", data: "07/03/1987" },
+      { nome: "Tatiane", data: "21/03/1984" },
+      { nome: "Sadrak", data: "23/03/1971" },
+      { nome: "Marcelo", data: "24/03/1980" },
+      { nome: "Suzana", data: "29/07/1992" },
+      { nome: "Vanessa", data: "12/08/1993" },
+      { nome: "Alrimar", data: "11/08/1989" },
+      { nome: "Silvano", data: "12/09/1978" },
+      { nome: "Anderson", data: "17/09/1998" },
+      { nome: "Geralda", data: "18/09/1978" },
+      { nome: "Josué", data: "29/09/1985" },
+      { nome: "Elisson", data: "14/11/2005" },
+      { nome: "Paula", data: "14/11/1985" }
+    ];
+
+    function loadData() {
+      const data = localStorage.getItem(storageKey);
+      return data ? JSON.parse(data) : defaultData;
+    }
+
+    function saveData(data) {
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+
+    function sortByMonth(data) {
+      return data.sort((a, b) => {
+        const [da, ma] = a.data.split("/").map(Number);
+        const [db, mb] = b.data.split("/").map(Number);
+        return ma !== mb ? ma - mb : da - db;
+      });
+    }
+
+    function getNextBirthdayIndex(data) {
+      const today = new Date();
+      const current = today.setHours(0, 0, 0, 0);
+
+      let upcoming = data.map((item, index) => {
+        const [day, month] = item.data.split("/").map(Number);
+        let date = new Date(today.getFullYear(), month - 1, day).setHours(0, 0, 0, 0);
+        if (date < current) date = new Date(today.getFullYear() + 1, month - 1, day).setHours(0, 0, 0, 0);
+        return { index, timeDiff: date - current };
+      });
+
+      upcoming.sort((a, b) => a.timeDiff - b.timeDiff);
+      return upcoming[0]?.index ?? -1;
+    }
+
+    function renderTable() {
+      const tableBody = document.querySelector("#birthdayTable tbody");
+      let data = sortByMonth(loadData());
+      saveData(data);
+      tableBody.innerHTML = "";
+
+      const today = new Date();
+      const todayDay = today.getDate();
+      const todayMonth = today.getMonth() + 1;
+      const todayDate = new Date(today.getFullYear(), todayMonth - 1, todayDay).setHours(0,0,0,0);
+
+      const nextBirthdayIndex = getNextBirthdayIndex(data);
+
+      data.forEach((item, index) => {
+        const [day, month] = item.data.split("/").map(Number);
+        const thisYearBirthday = new Date(today.getFullYear(), month - 1, day).setHours(0,0,0,0);
+
+        const isToday = (todayDay === day && todayMonth === month);
+        const isPast = thisYearBirthday < todayDate;
+        const isNext = index === nextBirthdayIndex;
+
+        const tr = document.createElement("tr");
+        if (isNext) tr.classList.add("highlight-next");
+        if (isPast && !isToday) tr.classList.add("past-date");
+
+        tr.innerHTML = `
+          <td data-label="Nome">${item.nome}</td>
+          <td data-label="Data de Nascimento">${item.data}</td>
+          <td data-label="Ações">
+            <svg onclick="editRow(${index})" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25zM21.41 6.34a1.25 1.25 0 000-1.77l-2.34-2.34a1.25 1.25 0 00-1.77 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            <svg onclick="deleteRow(${index})" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+
+        if (isToday) launchConfetti();
+      });
+    }
+
+    function editRow(index) {
+      let data = loadData();
+      const current = data[index];
+      const newName = prompt("Novo nome:", current.nome);
+      const newDate = prompt("Nova data (dd/mm/aaaa):", current.data);
+
+      if (newName && newDate) {
+        data[index] = { nome: newName, data: newDate };
+        saveData(data);
+        renderTable();
+      }
+    }
+
+    function deleteRow(index) {
+      if (confirm("Deseja excluir este aniversariante?")) {
+        let data = loadData();
+        data.splice(index, 1);
+        saveData(data);
+        renderTable();
+      }
+    }
+
+    function addRow() {
+      const name = prompt("Nome do aniversariante:");
+      const date = prompt("Data de nascimento (dd/mm/aaaa):");
+      if (name && date) {
+        let data = loadData();
+        data.push({ nome: name, data: date });
+        saveData(data);
+        renderTable();
+      }
+    }
+
+    function launchConfetti() {
+      const duration = 5000;
+      const end = Date.now() + duration;
+      const canvas = document.getElementById('confettiCanvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      function randomColor() {
+        const colors = ['#f06292', '#ba68c8', '#64b5f6', '#81c784', '#ffd54f', '#ff8a65'];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      function createParticles() {
+        for (let i = 0; i < 300; i++) {
+          particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            r: Math.random() * 6 + 2,
+            d: Math.random() * 10,
+            color: randomColor(),
+            tilt: Math.floor(Math.random() * 10) - 5
+          });
+        }
+      }
+
+      function drawParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let p of particles) {
+          ctx.beginPath();
+          ctx.fillStyle = p.color;
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        updateParticles();
+      }
+
+      function updateParticles() {
+        for (let p of particles) {
+          p.y += Math.cos(p.d) + 3;
+          p.x += Math.sin(p.d);
+          if (p.y > canvas.height) {
+            p.y = -10;
+            p.x = Math.random() * canvas.width;
+          }
+        }
+      }
+
+      createParticles();
+      const confettiInterval = setInterval(drawParticles, 16);
+
+      setTimeout(() => {
+        clearInterval(confettiInterval);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }, duration);
+    }
+
+    window.onload = renderTable;
+  </script>
+</body>
+</html>

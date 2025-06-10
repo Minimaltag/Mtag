@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Medição do mes atual</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .btn-alterar,
+    .btn-pdf {
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .passado {
+      background-color: #eee;
+    }
+
+    .hoje {
+      background-color: #ffeeba;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Medição do Mês Atual</h1>
+
+  <div class="secao">
+    <button class="btn-alterar" onclick="abrirModalMedicao()">Alterar Ordem</button>
+    <button class="btn-pdf" onclick="printSection('muralMedicao')">📄 PDF</button>
+    <div class="mural" id="muralMedicao"></div>
+  </div>
+
+  <!-- Modal para Medição -->
+  <div class="modal" id="modalMedicao">
+    <div class="modal-content">
+      <h3>Ordem de Nomes (um por linha)</h3>
+      <textarea id="ordemNomes" rows="10" style="width: 100%;"></textarea>
+      <button onclick="salvarOrdemMedicao()">Salvar Ordem</button>
+    </div>
+  </div>
+
+  <script>
+    let cicloMedicao = ["Bruno", "Talison", "Elison", "Sadrack", "Anderson", "Josue", "Herik"];
+
+    function gerarTabelaMedicao() {
+      const mural = document.getElementById("muralMedicao");
+      mural.innerHTML = "";
+
+      const hoje = new Date();
+      const mes = hoje.getMonth();
+      const ano = hoje.getFullYear();
+      const diaHoje = hoje.getDate();
+      const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+      const dataBase = new Date(ano, 0, 1);
+      const diaInicial = new Date(ano, mes, 1);
+      const diffDias = Math.floor((diaInicial - dataBase) / (1000 * 60 * 60 * 24));
+      let blocoIndex = Math.floor(diffDias / 3) % cicloMedicao.length;
+
+      const titulo = document.createElement("h3");
+      titulo.textContent = `Mês: ${(mes + 1).toString().padStart(2, '0')}/${ano}`;
+      const tabela = document.createElement("table");
+      tabela.innerHTML = "<thead><tr><th>Dia</th><th>Semana</th><th>Responsável</th></tr><tbody></tbody>";
+      const tbody = tabela.querySelector("tbody");
+
+      for (let dia = 1; dia <= diasNoMes; dia++) {
+        const data = new Date(ano, mes, dia);
+        const diaSemana = data.toLocaleDateString("pt-BR", { weekday: "long" });
+        const linha = tbody.insertRow();
+
+        if (dia < diaHoje) linha.classList.add("passado");
+        else if (dia === diaHoje) linha.classList.add("hoje");
+
+        linha.insertCell().textContent = dia;
+        linha.insertCell().textContent = diaSemana;
+        linha.insertCell().textContent = cicloMedicao[blocoIndex];
+
+        if (dia % 3 === 0) blocoIndex = (blocoIndex + 1) % cicloMedicao.length;
+      }
+
+      mural.appendChild(titulo);
+      mural.appendChild(tabela);
+    }
+
+    function abrirModalMedicao() {
+      document.getElementById("modalMedicao").style.display = "flex";
+      document.getElementById("ordemNomes").value = cicloMedicao.join('\n');
+    }
+
+    function salvarOrdemMedicao() {
+      const texto = document.getElementById("ordemNomes").value;
+      const nomes = texto.split("\n").map(n => n.trim()).filter(n => n);
+      if (nomes.length > 0) {
+        cicloMedicao = nomes;
+        document.getElementById("modalMedicao").style.display = "none";
+        gerarTabelaMedicao();
+      }
+    }
+
+    function printSection(muralId) {
+      const content = document.getElementById(muralId).innerHTML;
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write('<html><head><title>PDF</title></head><body>');
+      printWindow.document.write(content);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    window.onclick = function(e) {
+      if (e.target.classList.contains("modal")) e.target.style.display = "none";
+    };
+
+    gerarTabelaMedicao();
+  </script>
+</body>
+</html>
