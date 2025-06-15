@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat com Firebase</title>
+  <style>
+    #chat {
+      width: 400px;
+      height: 300px;
+      border: 1px solid #ddd;
+      overflow-y: scroll;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    #chat p {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Chat Simples</h2>
+
+<input id="username" type="text" placeholder="Seu nome" />
+<br><br>
+
+<div id="chat"></div>
+
+<input id="message" type="text" placeholder="Digite sua mensagem" style="width: 300px;" />
+<button id="sendBtn">Enviar</button>
+
+<script type="module">
+  // Configuração do Firebase (troque pelos seus dados)
+  const firebaseConfig = {
+  apiKey: "AIzaSyAIyxFrlnENidRukvtH9pFyHRa663lSqv4",
+  authDomain: "mtag-82f3b.firebaseapp.com",
+  projectId: "mtag-82f3b",
+  storageBucket: "mtag-82f3b.firebasestorage.app",
+  messagingSenderId: "272455640072",
+  appId: "1:272455640072:web:2cd41d6e746be3814d5dbd"
+};
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+  // Inicializar Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const chatDiv = document.getElementById('chat');
+  const usernameInput = document.getElementById('username');
+  const messageInput = document.getElementById('message');
+  const sendBtn = document.getElementById('sendBtn');
+
+  // Função para enviar mensagem
+  async function sendMessage() {
+    const text = messageInput.value.trim();
+    const user = usernameInput.value.trim();
+
+    if (!user) {
+      alert('Por favor, informe seu nome.');
+      return;
+    }
+    if (!text) {
+      alert('Digite uma mensagem.');
+      return;
+    }
+
+    await addDoc(collection(db, "messages"), {
+      text: text,
+      user: user,
+      timestamp: Date.now()
+    });
+
+    messageInput.value = "";
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  // Ouvir mensagens em tempo real
+  const q = query(collection(db, "messages"), orderBy("timestamp"));
+
+  onSnapshot(q, (snapshot) => {
+    chatDiv.innerHTML = ""; // Limpa para atualizar
+
+    snapshot.forEach(doc => {
+      const msg = doc.data();
+      const p = document.createElement('p');
+      p.textContent = `${msg.user}: ${msg.text}`;
+      chatDiv.appendChild(p);
+    });
+
+    chatDiv.scrollTop = chatDiv.scrollHeight; // Scroll para baixo
+  });
+
+  // Enviar mensagem ao pressionar Enter no campo mensagem
+  messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+</script>
+
+</body>
+</html>
