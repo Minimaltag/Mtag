@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat Anônimo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f1f1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    #chat-container {
+      width: 400px;
+      max-height: 500px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      overflow-y: auto;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+    }
+
+    .from-me {
+      background-color: #d1fcd3;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+
+    .from-other {
+      background-color: #f0f0f0;
+      align-self: flex-start;
+      margin-right: auto;
+    }
+
+    .username {
+      font-size: 0.75em;
+      color: #555;
+      margin-bottom: 3px;
+    }
+
+    #input-area {
+      display: flex;
+      gap: 5px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      background-color: #3b82f6;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+  </style>
+</head>
+<body>
+
+<h2>💬 Chat Anônimo</h2>
+
+<div id="chat-container"></div>
+
+<div id="input-area">
+  <input id="message" type="text" placeholder="Digite sua mensagem..." />
+  <button id="sendBtn">Enviar</button>
+</div>
+
+<script type="module">
+  // Firebase config - substitua pelos dados do seu projeto!
+  const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "SEU_PROJETO.firebaseapp.com",
+    projectId: "SEU_PROJETO",
+    storageBucket: "SEU_PROJETO.appspot.com",
+    messagingSenderId: "SEU_ID",
+    appId: "SEU_APP_ID"
+  };
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const chat = document.getElementById('chat-container');
+  const messageInput = document.getElementById('message');
+  const sendBtn = document.getElementById('sendBtn');
+
+  // Gera nome anônimo para o usuário
+  const anonUser = "Anônimo#" + Math.floor(Math.random() * 1000);
+
+  async function sendMessage() {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    await addDoc(collection(db, "messages"), {
+      text,
+      user: anonUser,
+      timestamp: Date.now()
+    });
+
+    messageInput.value = "";
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  messageInput.addEventListener('keypress', e => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  const q = query(collection(db, "messages"), orderBy("timestamp"));
+  onSnapshot(q, snapshot => {
+    chat.innerHTML = "";
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const div = document.createElement('div');
+      div.classList.add('message');
+      div.classList.add(data.user === anonUser ? 'from-me' : 'from-other');
+
+      const username = document.createElement('div');
+      username.classList.add('username');
+      username.textContent = data.user;
+
+      const text = document.createElement('div');
+      text.textContent = data.text;
+
+      div.appendChild(username);
+      div.appendChild(text);
+      chat.appendChild(div);
+    });
+
+    chat.scrollTop = chat.scrollHeight;
+  });
+
+</script>
+</body>
+</html>
